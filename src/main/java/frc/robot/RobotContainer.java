@@ -34,6 +34,7 @@ import frc.robot.subsystems.indexer.Indexer;
 import frc.robot.subsystems.hopper.Hopper;
 import frc.robot.auto.LeftDriveAuto;
 import frc.robot.auto.RightDriveAuto;
+import frc.robot.auto.DriveBackAuto;
 import frc.robot.constants.Constants.CameraConstants;
 import frc.robot.commands.ShootCommand;
 import frc.robot.subsystems.autoalignhood.Shootercalculations;
@@ -155,12 +156,15 @@ public class RobotContainer {
      private void initializeAutoCommands() {
          final Command LeftDisrupter = new LeftDriveAuto(drivetrain);
          final Command RightDisrupter = new RightDriveAuto(drivetrain);
+        final Command DriveBack = new DriveBackAuto(drivetrain);
 
 
     autoSelector = new SendableChooser<>();
      autoSelector.setDefaultOption("No Auto", new InstantCommand(() -> drivetrain.resetPose(drivetrain.getState().Pose), drivetrain));
      autoSelector.addOption("LeftDisrupter", LeftDisrupter);
      autoSelector.addOption("RightDisrupter", RightDisrupter);
+    //  autoSelector.addOption("DriveBack", DriveBack);
+
 
     
      autoSelector.close();
@@ -174,7 +178,6 @@ public class RobotContainer {
     }
 
      public Command getAutonomousCommand() {
-         return null;
-    
+        return autoSelector.getSelected();    
 }
 }
