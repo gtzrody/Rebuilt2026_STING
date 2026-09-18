@@ -43,7 +43,7 @@ import frc.robot.commands.FeedCommand;
 
 public class RobotContainer {
     
-    // public SendableChooser<Command> autoSelector;
+    public SendableChooser<Command> autoSelector;
 
     //Constants
     private double MaxSpeed = 1.0 * TunerConstants.kSpeedAt12Volts.in(MetersPerSecond); // kSpeedAt12Volts desired top speed
@@ -138,8 +138,8 @@ public class RobotContainer {
             new FeedCommand(drivetrain, m_Shooter, m_hood)
         );
         //Hood Bindings
-        joystick.povLeft().whileTrue(m_IntakePivot.set(0.35));
-        joystick.povRight().whileTrue(m_IntakePivot.set(-0.35));
+        joystick.povLeft().whileTrue(m_IntakePivot.set(0.22));
+        joystick.povRight().whileTrue(m_IntakePivot.set(-0.22));
         joystick.povUp().whileTrue(m_IntakePivot.setAngle(Degrees.of(IntakePivot.MIN_ANGLE_DEG)));
         joystick.povDown().whileTrue(m_IntakePivot.setAngle(Degrees.of(IntakePivot.MAX_ANGLE_DEG)));
 
@@ -153,18 +153,18 @@ public class RobotContainer {
    
 
      private void initializeAutoCommands() {
-        // final Command LeftDisrupter = new LeftDriveAuto(drivetrain);
-    //     final Command RightDisrupter = new RightDriveAuto(drivetrain);
+         final Command LeftDisrupter = new LeftDriveAuto(drivetrain);
+         final Command RightDisrupter = new RightDriveAuto(drivetrain);
 
 
-    // autoSelector = new SendableChooser<>();
-    // autoSelector.setDefaultOption("No Auto", new InstantCommand(() -> drivetrain.resetPose(drivetrain.getState().Pose), drivetrain));
-    // autoSelector.addOption("LeftDisrupter", LeftDisrupter);
-    // autoSelector.addOption("RightDisrupter", RightDisrupter);
+    autoSelector = new SendableChooser<>();
+     autoSelector.setDefaultOption("No Auto", new InstantCommand(() -> drivetrain.resetPose(drivetrain.getState().Pose), drivetrain));
+     autoSelector.addOption("LeftDisrupter", LeftDisrupter);
+     autoSelector.addOption("RightDisrupter", RightDisrupter);
 
     
-    // autoSelector.close();
-    // SmartDashboard.putData("Auto Selector", autoSelector);
+     autoSelector.close();
+     SmartDashboard.putData("Auto Selector", autoSelector);
     }
 
     public RobotContainer() {

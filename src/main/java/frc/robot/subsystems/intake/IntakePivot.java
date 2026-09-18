@@ -34,7 +34,7 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 public class IntakePivot extends SubsystemBase {
   private static final int MOTOR_ID = 15;
   private static final double GEAR_RATIO = 36.0;
-  private static final double KP = 0.35 / 75;
+  private static final double KP = 0.1 / 75;
   private static final double KI = 0.0;
   private static final double KD = 0.0;
 
