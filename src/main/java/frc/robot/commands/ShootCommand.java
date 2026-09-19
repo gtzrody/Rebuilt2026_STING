@@ -36,8 +36,6 @@ public ShootCommand(
         HubAlignmentPID         hubPID,
         Shooter                 shooter,
         Hood                    hood,
-        Indexer                 indexer,
-        Hopper                  hopper,
         Shootercalculations     shooterCalc) {
 
 
@@ -86,10 +84,8 @@ public ShootCommand(
                     interrupted -> {},
                     () -> false,
                     hood
-                ),
- 
-                indexer.set(0.60),
-                hopper.set(0.80)
+                )
+
             )
         );
     }

@@ -35,6 +35,7 @@ import frc.robot.subsystems.hopper.Hopper;
 import frc.robot.auto.LeftDriveAuto;
 import frc.robot.auto.RightDriveAuto;
 import frc.robot.auto.DriveBackAuto;
+import frc.robot.auto.CenterShootAuto;
 import frc.robot.constants.Constants.CameraConstants;
 import frc.robot.commands.ShootCommand;
 import frc.robot.subsystems.autoalignhood.Shootercalculations;
@@ -127,8 +128,6 @@ public class RobotContainer {
                     m_hubPID,
                     m_Shooter,
                     m_hood,
-                    m_index,
-                    m_hopper,
                     m_shooterCalc
                 ),
                 Set.of(drivetrain, m_Shooter, m_hood)
@@ -157,13 +156,18 @@ public class RobotContainer {
          final Command LeftDisrupter = new LeftDriveAuto(drivetrain);
          final Command RightDisrupter = new RightDriveAuto(drivetrain);
         final Command DriveBack = new DriveBackAuto(drivetrain);
+        final Command CenterShootAuto = new CenterShootAuto(drivetrain, m_Shooter, m_hood, m_hopper, m_index, m_intake, m_IntakePivot, m_shooterCalc, m_hubPID);
+
+    
 
 
     autoSelector = new SendableChooser<>();
      autoSelector.setDefaultOption("No Auto", new InstantCommand(() -> drivetrain.resetPose(drivetrain.getState().Pose), drivetrain));
      autoSelector.addOption("LeftDisrupter", LeftDisrupter);
      autoSelector.addOption("RightDisrupter", RightDisrupter);
-    //  autoSelector.addOption("DriveBack", DriveBack);
+     autoSelector.addOption("DriveBack", DriveBack);
+     autoSelector.addOption("CenterShoot", CenterShootAuto);
+
 
 
     
