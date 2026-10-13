@@ -45,7 +45,7 @@ public class Anti_Bean extends SubsystemBase {
   .withClosedLoopController(30, 0, 0)
   .withFeedforward(new ArmFeedforward(0, 0, 0))
   .withSimFeedforward(new ArmFeedforward(0, 0, 0))
-  .withTelemetry("HoodMotor", TelemetryVerbosity.HIGH)
+  .withTelemetry("AntiBeanMotor", TelemetryVerbosity.HIGH)
   .withGearing(36)
   .withMotorInverted(false)
   .withIdleMode(MotorMode.BRAKE)    
@@ -130,7 +130,6 @@ public class Anti_Bean extends SubsystemBase {
   public void periodic() {
     // This method will be called once per scheduler run
     arm.updateTelemetry();
-    SmartDashboard.putNumber("Hood Encoder Ticks", this.arm.getAngle().magnitude());
 
   }
 
