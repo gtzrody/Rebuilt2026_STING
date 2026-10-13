@@ -1,3 +1,7 @@
+// Copyright (c) FIRST and other WPILib contributors.
+// Open Source Software; you can modify and/or share it under the terms of
+// the WPILib BSD license file in the root directory of this project.
+
 package frc.robot.subsystems.intake;
 
 import static edu.wpi.first.units.Units.Amps;
@@ -6,205 +10,133 @@ import static edu.wpi.first.units.Units.DegreesPerSecond;
 import static edu.wpi.first.units.Units.DegreesPerSecondPerSecond;
 import static edu.wpi.first.units.Units.Feet;
 import static edu.wpi.first.units.Units.Pounds;
-import static edu.wpi.first.units.Units.RPM;
 import static edu.wpi.first.units.Units.Second;
 import static edu.wpi.first.units.Units.Seconds;
 import static edu.wpi.first.units.Units.Volts;
 
-import com.ctre.phoenix6.CANBus;
-import com.ctre.phoenix6.controls.DutyCycleOut;
-import com.ctre.phoenix6.controls.MotionMagicVoltage;
+import com.revrobotics.spark.SparkLowLevel.MotorType;
+import com.revrobotics.spark.SparkMax;
+
+import edu.wpi.first.math.controller.ArmFeedforward;
+import edu.wpi.first.math.system.plant.DCMotor;
+import edu.wpi.first.units.measure.Angle;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import yams.mechanisms.SmartMechanism;
+import yams.mechanisms.config.ArmConfig;
+import yams.mechanisms.positional.Arm;
+import yams.motorcontrollers.SmartMotorController;
+import yams.motorcontrollers.SmartMotorControllerConfig;
+import yams.motorcontrollers.SmartMotorControllerConfig.ControlMode;
+import yams.motorcontrollers.SmartMotorControllerConfig.MotorMode;
+import yams.motorcontrollers.SmartMotorControllerConfig.TelemetryVerbosity;
+import yams.motorcontrollers.local.SparkWrapper;
+import yams.motorcontrollers.remote.TalonFXWrapper;
 import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.CANBus;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.signals.InvertedValue;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 
-import edu.wpi.first.units.measure.Angle;
-import edu.wpi.first.wpilibj.RobotBase;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import edu.wpi.first.wpilibj.simulation.DCMotorSim;
-import edu.wpi.first.math.system.plant.DCMotor;
-import edu.wpi.first.math.system.plant.LinearSystemId;
-import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
-
-
 public class IntakePivot extends SubsystemBase {
-  private static final int MOTOR_ID = 15;
-  private static final double GEAR_RATIO = 36.0;
-  private static final double KP = 0.1 / 75;
-  private static final double KI = 0.0;
-  private static final double KD = 0.0;
 
-  public static final double MIN_ANGLE_DEG = 0.0;
-  public static final double MAX_ANGLE_DEG = -75.0;
+  private SmartMotorControllerConfig smcConfig = new SmartMotorControllerConfig(this)
+  .withControlMode(ControlMode.CLOSED_LOOP)
+  .withClosedLoopController(30, 0, 0)
+  .withFeedforward(new ArmFeedforward(0, 0, 0))
+  .withSimFeedforward(new ArmFeedforward(0, 0, 0))
+  .withTelemetry("HoodMotor", TelemetryVerbosity.HIGH)
+  .withGearing(36)
+  .withMotorInverted(false)
+  .withIdleMode(MotorMode.BRAKE)    
+  .withStatorCurrentLimit(Amps.of(90))
+  .withClosedLoopRampRate(Seconds.of(0.25))
+  .withOpenLoopRampRate(Seconds.of(0.25));
 
-  private final TalonFX pivotFx = new TalonFX(MOTOR_ID, new CANBus("canivore"));
-  private final MotionMagicVoltage positionRequest = new MotionMagicVoltage(0);
-  private final DutyCycleOut dutyCycleRequest = new DutyCycleOut(0);
-
-  private static final double ARM_LENGTH_M = Feet.of(2).in(edu.wpi.first.units.Units.Meters);
-  private static final double ARM_MASS_KG = Pounds.of(1).in(edu.wpi.first.units.Units.Kilograms);
-  private static final double ARM_MOI = (ARM_MASS_KG * ARM_LENGTH_M * ARM_LENGTH_M) / 3.0;
-
-  private final DCMotorSim pivotSim =
-      new DCMotorSim(
-          LinearSystemId.createDCMotorSystem(
-              DCMotor.getKrakenX60(1), ARM_MOI, GEAR_RATIO),
-          DCMotor.getKrakenX60(1));
-
-  private final SysIdRoutine sysIdRoutine =
-      new SysIdRoutine(
-          new SysIdRoutine.Config(
-              Volts.of(2).per(Second),
-              Volts.of(7),
-              Seconds.of(4)),
-          new SysIdRoutine.Mechanism(
-              volts -> pivotFx.setVoltage(volts.in(Volts)),
-              log -> {},
-              this));
-
-  public IntakePivot() {
-    TalonFXConfiguration config = new TalonFXConfiguration();
-
-    config.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive;
-    config.MotorOutput.NeutralMode = NeutralModeValue.Brake;
-
-    config.CurrentLimits.StatorCurrentLimit = 90.0;
-    config.CurrentLimits.StatorCurrentLimitEnable = true;
-
-    config.Feedback.SensorToMechanismRatio = GEAR_RATIO;
-
-    config.Slot0.kP = KP;
-    config.Slot0.kI = KI;
-    config.Slot0.kD = KD;
-
-    config.MotionMagic.MotionMagicCruiseVelocity =
-        DegreesPerSecond.of(90).in(edu.wpi.first.units.Units.RotationsPerSecond);
-    config.MotionMagic.MotionMagicAcceleration =
-        DegreesPerSecondPerSecond.of(45)
-            .in(edu.wpi.first.units.Units.RotationsPerSecondPerSecond);
-
-    config.SoftwareLimitSwitch.ForwardSoftLimitEnable = true;
-    config.SoftwareLimitSwitch.ForwardSoftLimitThreshold =
-        Degrees.of(MIN_ANGLE_DEG).in(edu.wpi.first.units.Units.Rotations);
-    config.SoftwareLimitSwitch.ReverseSoftLimitEnable = true;
-    config.SoftwareLimitSwitch.ReverseSoftLimitThreshold =
-        Degrees.of(MAX_ANGLE_DEG).in(edu.wpi.first.units.Units.Rotations);
-
-    config.ClosedLoopRamps.DutyCycleClosedLoopRampPeriod = 0.25;
-    config.ClosedLoopRamps.VoltageClosedLoopRampPeriod = 0.25;
-    config.OpenLoopRamps.DutyCycleOpenLoopRampPeriod = 0.25;
-    config.OpenLoopRamps.VoltageOpenLoopRampPeriod = 0.25;
-
-    pivotFx.getConfigurator().apply(config);
-
-    pivotFx.setPosition(Degrees.of(0));
-  }
+  // Vendor motor controller object
+    TalonFX pivotFx = new TalonFX(15, new CANBus("canivore"));
 
 
-  public Command setAngle(Angle angle) {
-    return run(() -> setAngleSetpoint(angle));
-  }
+  // Create our SmartMotorController from our Spark and config with the NEO.
+  SmartMotorController pivotController = new TalonFXWrapper(pivotFx, DCMotor.getKrakenX60(1), smcConfig);
 
+
+  private ArmConfig armCfg = new ArmConfig();
+
+  // Arm Mechanism
+  private Arm arm = new Arm(armCfg, pivotController);
+
+  /**
+   * Set the angle of the arm, does not stop when the arm reaches the setpoint.
+   * @param angle Angle to go to.
+   * @return A command.
+   */
+  public Command setAngle(Angle angle) { return arm.run(angle);}
   
-  public Command setAngleAndStop(Angle angle, Angle tolerance) {
-    return Commands.sequence(
-        runOnce(() -> setAngleSetpoint(angle)),
-        Commands.waitUntil(() -> getAngle().isNear(angle, tolerance)));
+  /**
+   * Set the angle of the arm, ends the command but does not stop the arm when the arm reaches the setpoint.
+   * @param angle Angle to go to.
+   * @param tolerance Angle tolerance for completion.
+   * @return A Command
+   */
+  public Command setAngleAndStop(Angle angle, Angle tolerance) { return arm.runTo(angle, tolerance);}
+  
+  /**
+   * Set arm closed loop controller to go to the specified mechanism position.
+   * @param angle Angle to go to.
+   */
+  public void setAngleSetpoint(Angle angle) { arm.setMechanismPositionSetpoint(angle); }
+
+  /**
+   * Move the arm up and down.
+   * @param cycle [-1, 1] speed to set the arm too.
+   */
+  public Command set(double cycle) { return arm.set(cycle);}
+
+  public Angle getAngle() { return arm.getAngle(); }
+
+  /**
+   * Run sysId on the {@link Arm}
+   */
+
+  /** Creates a new ExampleSubsystem. */
+  public IntakePivot() {}
+
+  /**
+   * Example command factory method.
+   *
+   * @return a command
+   */
+  public Command exampleMethodCommand() {
+    // Inline construction of command goes here.
+    // Subsystem::RunOnce implicitly requires `this` subsystem.
+    return runOnce(
+        () -> {
+          /* one-time action goes here */
+        });
   }
 
   /**
-   * Sets the persistent hood angle setpoint.
+   * An example method querying a boolean state of the subsystem (for example, a digital sensor).
+   *
+   * @return value of some boolean subsystem state, such as a digital sensor.
    */
-  public void setAngleSetpoint(Angle angle) {
-    Angle clamped =
-        Degrees.of(
-            Math.min(
-                MIN_ANGLE_DEG,
-                Math.max(MAX_ANGLE_DEG, angle.in(Degrees))));
-
-    positionRequest.withPosition(clamped);
-    pivotFx.setControl(positionRequest);
-  }
-
-  /**
-   * Manual duty-cycle control.
-   */
-  public Command set(double cycle) {
-    return run(() -> {
-      double output = Math.max(-1.0, Math.min(1.0, cycle));
-      dutyCycleRequest.withOutput(output);
-      pivotFx.setControl(dutyCycleRequest);
-    });
-  }
-
-  public Angle getAngle() {
-    // TalonFX is configured to expose mechanism-side position.
-    return pivotFx.getPosition().getValue();
-  }
-
-  /**
-   * Same SysId voltage/time profile as the original YAMS Arm.
-   */
-  public Command sysId() {
-    Command dynamicForward =
-        sysIdRoutine.dynamic(SysIdRoutine.Direction.kForward)
-            .until(() -> getAngle().in(Degrees) >= MAX_ANGLE_DEG - 1.0)
-            .withTimeout(3.0);
-
-    Command dynamicReverse =
-        sysIdRoutine.dynamic(SysIdRoutine.Direction.kReverse)
-            .until(() -> getAngle().in(Degrees) <= MIN_ANGLE_DEG + 1.0);
-
-    Command quasistaticForward =
-        sysIdRoutine.quasistatic(SysIdRoutine.Direction.kForward)
-            .until(() -> getAngle().in(Degrees) >= MAX_ANGLE_DEG - 1.0)
-            .withTimeout(3.0);
-
-    Command quasistaticReverse =
-        sysIdRoutine.quasistatic(SysIdRoutine.Direction.kReverse)
-            .until(() -> getAngle().in(Degrees) <= MIN_ANGLE_DEG + 1.0);
-
-    return Commands.sequence(
-        Commands.print("Starting SysId!"),
-        dynamicForward,
-        dynamicReverse,
-        quasistaticForward,
-        quasistaticReverse);
+  public boolean exampleCondition() {
+    // Query some boolean state, such as a digital sensor.
+    return false;
   }
 
   @Override
   public void periodic() {
-    SmartDashboard.putNumber("Pivot Angle Degrees", getAngle().in(Degrees));
-    SmartDashboard.putNumber("Pivot Position Request", positionRequest.getPositionMeasure().in(Degrees));
-    SmartDashboard.putNumber("Pivot Fx Speed", pivotFx.get());
-    SmartDashboard.putNumber(
-        "Pivot Stator Current",
-        pivotFx.getStatorCurrent().getValue().in(Amps));
+    // This method will be called once per scheduler run
+    arm.updateTelemetry();
+    SmartDashboard.putNumber("Hood Encoder Ticks", this.arm.getAngle().magnitude());
+
   }
 
   @Override
   public void simulationPeriodic() {
-    if (!RobotBase.isSimulation()) {
-      return;
-    }
-
-    pivotSim.setInputVoltage(pivotFx.getSimState().getMotorVoltage());
-    pivotSim.update(0.020);
-
-    double angleDeg = Math.max(
-        MIN_ANGLE_DEG,
-        Math.min(MAX_ANGLE_DEG, Math.toDegrees(pivotSim.getAngularPositionRad())));
-
-    double rotorRotations =
-        Degrees.of(angleDeg).in(edu.wpi.first.units.Units.Rotations) * GEAR_RATIO;
-
-    pivotFx.getSimState().setRawRotorPosition(
-        edu.wpi.first.units.Units.Rotations.of(rotorRotations));
-    pivotFx.getSimState().setRotorVelocity(
-        DegreesPerSecond.of(Math.toDegrees(pivotSim.getAngularVelocityRadPerSec()) * GEAR_RATIO));
+    // This method will be called once per scheduler run during simulation
+    arm.simIterate();
   }
 }

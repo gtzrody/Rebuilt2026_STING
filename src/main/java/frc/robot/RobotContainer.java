@@ -32,6 +32,7 @@ import frc.robot.subsystems.intake.Intake;
 import frc.robot.subsystems.intake.IntakePivot;
 import frc.robot.subsystems.indexer.Indexer;
 import frc.robot.subsystems.hopper.Hopper;
+import frc.robot.subsystems.anti_bean.Anti_Bean;
 import frc.robot.auto.LeftDriveAuto;
 import frc.robot.auto.RightDriveAuto;
 import frc.robot.auto.DriveBackAuto;
@@ -66,6 +67,7 @@ public class RobotContainer {
     private final Indexer m_index = new Indexer();
     private final Hopper m_hopper = new Hopper();
     private final IntakePivot m_IntakePivot = new IntakePivot();
+    private final Anti_Bean m_antibean = new Anti_Bean();
     private final HubAlignmentPID m_hubPID = new HubAlignmentPID(drivetrain);
     private final Shootercalculations m_shooterCalc = new Shootercalculations();
     // private final Command swerveTeleop = new SwerveTeleop(drivetrain, joystick);
@@ -84,6 +86,7 @@ public class RobotContainer {
 
      private void configureDefaultCommands() {
         // drivetrain.setDefaultCommand(swerveTeleop);
+        m_antibean.setDefaultCommand(m_antibean.set(0));
         m_intake.setDefaultCommand(m_intake.set(0));
         m_index.setDefaultCommand(m_index.set(0));
         m_hopper.setDefaultCommand(m_hopper.set(0));
@@ -137,11 +140,11 @@ public class RobotContainer {
         joystick.b().whileTrue(
             new FeedCommand(drivetrain, m_Shooter, m_hood)
         );
-        //Hood Bindings
+        //AntiBean Bindings
         joystick.povLeft().whileTrue(m_IntakePivot.set(0.22));
         joystick.povRight().whileTrue(m_IntakePivot.set(-0.22));
-        joystick.povUp().whileTrue(m_IntakePivot.setAngle(Degrees.of(IntakePivot.MIN_ANGLE_DEG)));
-        joystick.povDown().whileTrue(m_IntakePivot.setAngle(Degrees.of(IntakePivot.MAX_ANGLE_DEG)));
+        joystick.povUp().whileTrue(m_antibean.set(0.1));
+        joystick.povDown().whileTrue(m_antibean.set(-0.1));
 
 
     
